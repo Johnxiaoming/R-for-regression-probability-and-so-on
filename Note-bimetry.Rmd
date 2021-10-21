@@ -1,0 +1,1738 @@
+---
+title: "Biometry Lab"
+author: "Nina Fogel"
+date: "2/8/2021"
+output: html_document
+---
+KEEP THIS CHUNK!
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#####Lab 00 02/08/2021 
+Use "hashtags" to change the font size.
+
+Resources for HW, etc 
+textbooks loaded to blackboard
+the internet is your friend! 
+R gallery if you want to do your graphs in ggplot2
+
+```{r}
+library(ISwR)
+data(iris)
+head(iris) #shows the top of the data in a table format (less needed in R markdown because it automatically builds a table for you) 
+summary(iris) #shows the data summary with mean, median and quartiles 
+
+
+```
+
+Indexing! 
+Matricies are described using row and columns, R has a specific AND decidated grammar to do that. 
+
+name.of.the.file [list.rows, list.columns]
+```{r}
+iris[1:3,1:3] #first 3 rows and columns 
+iris[133:141, 3:5] #random columns and rows in the middle 
+iris[1:3,]#random rows and all the columns --> leave it blank after the , 
+iris[ , 3:5] # all the rows and a few columns --> leave blank before the , 
+
+iris.20rows<-iris[1:20,] #this actually makes the subset a variable you can actually use for things 
+#if you look in the global env you'll see there's a variable that appeared called iris.20rows. To now see what you made, you have to run the variable
+iris.20rows
+
+#if want to extract information like all the individuals of one speices, don't want to do it by indexing, instead want to do it by string matching 
+
+virginia<-iris[iris$Species == "virginica",] 
+
+iris
+```
+
+DPLYR --> download library
+
+Cheatsheet: https://rstudio.com/wp-content/uploads/2015/02/data-wrangling-cheatsheet.pdf
+Dr. Speegle's textbook with exercises: https://mathstat.slu.edu/~speegle/_book/datamanipulation.html#data-frames-and-tibbles
+
+
+pipe operators:   %>%
+```{r}
+library(dplyr)
+#remember that the values are not saved anywhere unless you put a name<- in front of it 
+selectiris<-iris%>%select(Sepal.Length, Sepal.Width) #select columns 
+iris%>%select(!Sepal.Length) #select NOT columns
+
+iris%>%filter(Sepal.Width>3) #filter based on numberic values 
+iris%>%filter(Species == "virginica") # filter based on strings 
+
+iris%>%mutate(lenXwid = Sepal.Length*Sepal.Width) #create a new column 
+
+iris%>%select(!Petal.Width)%>%filter(Sepal.Width>3) #you can string multiple operators together, just put a %>% between them 
+
+```
+
+Data graphing 
+
+boxplot --> discrete x-axis
+plot --> continuous x-axis 
+
+Super basic boxplot. Can then make "pretty" 
+All plots submitted for hw should be "pretty" with appropriate axis labels. 
+```{r}
+boxplot(iris$Sepal.Length ~ iris$Species)
+
+boxplot(iris$Sepal.Length ~ iris$Species, col = c("salmon", "royalblue", "goldenrod"), 
+main = "Size Variation in Iris", xlab ="species", ylab = "Sepal Len")
+```
+You can always do your graphs in ggplot2 if you want. Download library and there's lots of help for it online. See r gallery https://www.r-graph-gallery.com/index.html for lots of help
+
+plot function 
+```{r}
+plot(iris$Sepal.Length ~ iris$Sepal.Width, pch = 25)
+
+#if wanted to do the log 
+plot(log(iris$Sepal.Length) ~ iris$Sepal.Width, pch = 16)
+
+#want to do variable based on the different species. In r markdown make sure to run the two lines together  
+plot(iris$Sepal.Length ~ iris$Sepal.Width, pch = 25)
+points(virginia$Sepal.Length ~virginia$Sepal.Width, col = "blue", pch = 20)
+```
+
+Making graphs in base R is great for examining the data yourself. Make plots in ggplot are nicer for publication because you can adapt them a lot more. 
+######
+
+#####Lab 01 02/22/2021 
+
+There are lots of probability distributions. https://www.stat.umn.edu/geyer/old/5101/rlook.html
+p for "probability", the cumulative distribution function (c. d. f.)
+q for "quantile", the inverse c. d. f.
+d for "density", the density function (p. f. or p. d. f.)
+r for "random", a random variable having the specified distribution
+
+
+Importing data
+You can just import data and not put the code but I like to put the text line in so that if I ever want to reload it, the line of code is there. 
+
+So you name the file, then put the location of the file. To get it easiest, I click import data set at the top right, import it and then copy the text from the console. 
+```{r}
+leaf <- read.csv("~/Documents/biometry 2021/LeafData1.csv")
+leaf #this is where R markdown really shines! You see the first 10 rows, and the data type for all columns.
+summary(leaf)
+```
+
+If there's entry problems you'll see NAS. 
+If having problems entering data bc R isn't reading correctly, one way is to copy and paste all the data into a new excel file and save it as a CSV. 
+
+Plot leaf # as a function of height
+Both these are the same graph 
+```{r}
+plot(leaf$HEIGHT.CM,leaf$LEAF.NUMBER) # x, y
+
+plot(leaf$LEAF.NUMBER ~leaf$HEIGHT.CM) #y as a function of x 
+```
+You can also sue the attach function. Then r ONLY looks in that file. *However, this is a bad habit!* I did this and it really screwed me over as soon as I worked with multiple files. I recommend not doing it and instead just calling the file 
+```{r}
+attach(leaf)
+plot(LEAF.NUMBER ~HEIGHT.CM)
+detach(leaf)
+```
+
+Plot leaf width against leaf length
+```{r}
+plot(leaf$LEAF.W.CM~leaf$LEAF.L.CM)
+
+barplot(leaf$LEAF.NUMBER)
+hist(leaf$HEIGHT.CM) #this doesn't look normal. If normal would be more bell shaped. This looks like a bimodal dist because there are two peaks 
+```
+Table function tabulates your data  
+```{r}
+table(leaf$PARK, leaf$LIFE.STAGE)
+```
+
+Boxplot. For boxplot you need to do "as a function of"   
+```{r}
+boxplot(leaf$HEIGHT.CM~leaf$PARK)
+boxplot(leaf$HEIGHT.CM~leaf$PARK*leaf$LIFE.STAGE) # multiplying breaks up by park and life stage 
+```
+P(k|n) = n!/k! * (n-k)!* p^k * q^(n-k)
+
+n = # of trials
+k = # of successes
+n-k = # of failures
+q = probability of failure 
+
+n = 8; k = 5; p = 0.5; q= 1-p = .5
+
+8!/5!*3!*.5^5*.5^3
+
+56*0.5^8 = .22
+
+How do we do this in r?
+```{r}
+?dbinom
+dbinom(x=5, size = 8, prob =0.5) 
+dbinom(5,8, .5) #can put these like this (quicker)
+
+dbinom(0:8,8, .5) # all the possibilities 
+barplot(dbinom(0:8,8, .5))
+
+#observations farther away from the means should be observed less often 
+```
+
+```{r}
+sample(1:50, 5) #picks 5 random numbers between 1 and 50
+sample(c("H", "T"), 10, replace = T) #sample with replacement, like flipping a coin
+sample(c("succ", "fail"), 10, replace = T, prob = c(.9, .1)) #assigning probabilities to success and failure
+
+```
+Random number generator 
+default: mean is 0, sd = 1 
+```{r}
+?rnorm
+rnorm(10) #this just tells how many numbers you want. Will give you negative values
+```
+Let's say average height is 155CM +/- 4.2CM
+
+```{r}
+x<-rnorm(50, mean= 155, sd=4.2)
+hist(x)
+#OR
+hist(rnorm(50, mean= 155, sd=4.2))
+#This isn't perfectly normal. The larger the sample size, the more normal it looks. 
+hist(rnorm(100, mean= 155, sd=4.2))
+hist(rnorm(1000, mean= 155, sd=4.2))
+
+plot(rnorm(100, mean= 155, sd=4.2))
+abline(155,0, col = "red")
+plot(rnorm(1000, mean= 155, sd=4.2))
+abline(155,0, col = "red")
+```
+Remember that when running abline in rmarkdown you need to highlight the plot line and the abline and run them together. Otherwise R doens't know where to add the abline to. 
+
+In a perfectly normal dist, 66% of observations are going to be within 1 sd of the mean. 
+Within 2 sd, there is 95% of the mean
+within 3 sd it's 99% 
+
+
+
+#####Lab 02 03/01/2021
+
+
+Basic data distribution descriptions 
+
+1) Poisson 
+
+```{r}
+set.seed(666) #random number between 1 and 999 
+
+mypois.data<-rpois(30,3.3)
+summary(mypois.data) #mean is 2.9 (or something about there depending --> will change) 
+barplot(mypois.data)
+table(mypois.data)
+#10 minute boing boing boing boing break
+hist(mypois.data)
+hist(mypois.data, pretty(mypois.data)) #pretty eliminiate holes in dataset 
+
+
+```
+Goodness of fit test using Chi-squared
+-require observed data & expected data 
+  -observed comes from sampling
+  -expected is generated by the hypothesized dist 
+    -if hypothesize data is poisson, use poisson to generate expected, if normal, use a normal dist, etc 
+    
+```{r}
+obs<-table(mypois.data)
+obs
+exp<-dpois(0:6, 3.3)
+exp #random poisson dist with a mean of 3.3 
+chisq.test(obs, exp) #chi squared test with observed and expected 
+
+```
+    
+If you have "bins" with less than 5 observations the test weights them too heavily. Therefore, you need to manually readjust the bins given your data. 
+
+Then, after you bin the observed data you need to do similar binning with the expected so that they match 
+
+e.g.
+0 1 2 3 4 5 6 
+1 5 8 5 6 3 2 
+
+ 
+I would bin 1 &2 
+5&6 
+
+resulting in 
+6,8,5,6,5
+
+my experimental
+0.037 0.122 0.201 0.221 0.182 0.120 0.066
+
+would change to
+.159, .201, .221, .182, .186
+
+```{r}
+obs
+exp
+obs.combined<-c(6,7,5,6,5) 
+exp.combined<-c(.159, .201, .221, .182, .186)
+
+#redo chi square test with re-binned data 
+chisq.test(obs.combined, exp.combined)
+```
+
+Normal dist
+```{r}
+normal.data<-rnorm(15, mean = 100, sd =5)
+summary(normal.data)
+hist(normal.data)
+
+#use this test to see if you data are normal
+qqnorm(normal.data)
+
+#x is sd away from the mean 
+#if it perfectly normal, it should be a flat line. 
+
+#Test for normality is the Shapiro-wilkes test ("w")
+shapiro.test(normal.data) #if p > 0.05 it is normal, if p<0.05 it is not normal 
+#null hypothesis is that data are normal! 
+```
+
+```{r}
+leaf<- read.csv("~/Documents/biometry 2021/LeafData1.csv")
+leaf #orchids in two parks 
+summary(leaf)
+
+hist(leaf$LEAF.NUMBER)
+table(leaf$LEAF.NUMBER) #1 plant with 1 leaf. 
+barplot(leaf$LEAF.NUMBER)
+
+boxplot(leaf$HEIGHT.CM ~leaf$LEAF.NUMBER) #mean and variance gets bigger as there's more leaves
+#makes biological sense -- more range as there's more leaves, older plant 
+#therefore it appears this is not a normal dist, but still want to confirm it 
+
+shapiro.test(leaf$HEIGHT.CM) #super non normal --> P<<<0.0001 --> reject H0 
+
+#but this above is looking at the data set as a whole. More want to know if it normal within the "bins" 
+#to do this run a LM on the residuals from within each cateogy of leaf number. 
+
+lm.leaf<-lm(leaf$HEIGHT.CM ~leaf$LEAF.NUMBER)
+shapiro.test(lm.leaf$residuals) #p ~ 1 which means it is normal. 
+
+#transform the data to make it normal --> right now it is exponential, get rid of it by log transform based on the number of leaves 
+boxplot(log10(leaf$HEIGHT.CM) ~leaf$LEAF.NUMBER)
+
+#want to remove the 1 probably because it's only a single observation so it's given a lot of weight 
+
+#"when in doubt, log transform" 
+```
+Data summeries that are more appropriate for reports and tables 
+```{r}
+tapply(leaf$HEIGHT.CM,leaf$LEAF.NUMBER, mean)
+tapply(leaf$LEAF.W.CM, leaf$PARK,mean)
+tapply(leaf$LEAF.W.CM, leaf$PARK,sd)
+```
+
+let's make our lives easier with Rmisc
+```{r}
+library(Rmisc) #has lots of great summary packages 
+
+#summarySE(dataset, measurevar= "X", groupcars "Y"
+
+summarySE(leaf, measurevar="HEIGHT.CM", groupvars ="PARK" )
+
+
+
+#park = park
+#N = number of observations 
+#HEIGHT.CM = mean 
+#sd = stnadrd deviation 
+#se = standard error 
+#ci = confidence interval 
+
+#now do by park and life stage 
+summarySE(leaf, measurevar="HEIGHT.CM", groupvars =c("PARK", "LIFE.STAGE"))
+boxplot(leaf$HEIGHT.CM ~leaf$PARK * leaf$LIFE.STAGE)
+
+boxplot(log10(leaf$HEIGHT.CM) ~leaf$PARK * leaf$LIFE.STAGE)
+
+
+```
+
+
+Load files and fix columns -- see PDF sent out 
+```{r}
+ward <- read.csv("~/Documents/biometry 2021/ward.csv")
+
+vats <- read.csv("~/Documents/biometry 2021/unequal.vats.csv")
+
+#rename your column 
+vats<-vats%>%rename(nephron.length = nephron.lenght)
+```
+
+
+#####Lab 03 03/08/2021
+
+Reminders: 
+Look at all the resource we have for you in the folders on Blackboard. 
+
+I'll be out of town this weekend so won't answer any questions from Friday evening to Sunday evening. Just a heads up 
+
+One sample t-test
+H0: no difference between means 
+Theorhetical parametric mean 
+
+One sample t test 
+```{r}
+daily.intake <- c(5260, 5470, 5640, 6180, 6390, 6515, 6805, 7515, 7515, 8230, 8770)
+
+mean(daily.intake) #6754
+sd(daily.intake) #1142
+quantile(daily.intake)
+t.test(daily.intake, mu=7725) #mean expressed in the literature 
+#it recognizes it is a one sample t test because there's only one data file 
+
+#output has df, etc. p value is less than 0.05, reject the null 
+```
+in general you want a sample size of at least 30 for doing a ttest 
+
+two sample t test is default 
+
+```{r}
+t.test(daily.intake, mu=7725, alternative = "less") #this makes it one tailed 
+#p value because it puts all the power rin one direction 
+
+t.test(daily.intake, mu=7725, alternative = "greater") #other way 
+```
+Wilcox test :very close to the Mann Whitney U test ~ homologous 
+
+Can do the same things that you do for the t test 
+```{r}
+wilcox.test(daily.intake, mu = 7725) #p = .03
+wilcox.test(daily.intake, mu = 7725, alternative = "less") # p = .01
+wilcox.test(daily.intake, mu = 7725, alternative = "greater") # p = 1
+```
+
+Two sample t-test
+H0: no difference between means
+
+Can once again do one tail, two tail, etc 
+
+
+```{r}
+library(ISwR)
+attach(energy) #energy is in the library ISwR
+energy
+
+summary(energy) #way to get a quick look at the file
+str(energy) #str = structure. see some info as well. can also see it by clicking the blue arrow next to the name in the global environment  
+
+t.test(expend~stature) #default is 2 tailed, unequal variances 
+boxplot(expend~stature)
+var.test(expend~stature) #variances are equal so therefore modify the test 
+
+t.test(expend~stature, var.equal=T) #now p value is even smaller 
+
+#sample sizes are very small so the test may be failing to test variance in the samples 
+
+boxplot(log(expend)~stature) #not see the variances are a bit more similar. log transformation helped 
+
+t.test(log(expend)~stature, var.equal=T) #more sig with log transformation 
+
+wilcox.test(expend ~stature) # in non par don't need to specify anything about variance.
+#The non par test still recognizes that there's difference
+
+
+```
+
+
+```{r}
+attach(intake)
+intake
+summary(intake)
+str(intake)
+#need to test the t test as paired because it's measuring the same people/animals/whatever after some manipulation. 
+t.test(pre, post, paired=T) #default for paired is False  
+
+wilcox.test(pre,post, paired = T) #non parametric 
+
+detach(energy)
+detach(intake)
+```
+summary: in t test the things you can change are var, alternative and paired 
+
+```{r}
+?t.test #this will give you the help page and all the ways you can change. 
+#can also go to the help tab and type in the function name 
+```
+
+
+Compare leaf  width between parks 
+```{r}
+leaf <- read.csv("~/Documents/biometry 2021/LeafData1.csv")
+leaf
+summary(leaf)
+boxplot(leaf$LEAF.W.CM~leaf$PARK) #based on this only if there was an difference I would be very surprised. 
+var.test(leaf$LEAF.W.CM~leaf$PARK) #variances are not equal 
+var.test(log10(leaf$LEAF.W.CM+1)~leaf$PARK) #when log 10 need to add 1 
+#this show needs to do t test with unequal sample sizes 
+#but in this case raw format is better than log transformed 
+
+#HA has to be two tailed. doesn't make sense to do 1 tailed. 
+t.test(leaf$LEAF.W.CM~leaf$PARK, var.equal=F) #t stat veyr close to 0 
+#p value is 0.7 
+
+```
+Perform t test with LIFE.STAGE as the factor 
+```{r}
+boxplot(leaf$LEAF.W.CM~leaf$LIFE.STAGE) #based on this there may be a differenec
+
+var.test(leaf$LEAF.W.CM~leaf$LIFE.STAGE) #variances are not equal 
+var.test(log10(leaf$LEAF.W.CM+1)~leaf$LIFE.STAGE) #when log 10 need to add 1 
+#this show needs to do t test with unequal sample sizes 
+
+#but in this case raw format is better than log transformed 
+
+#HA has to be two tailed. doesn't make sense to do 1 tailed. 
+t.test(leaf$LEAF.W.CM~leaf$LIFE.STAGE, var.equal=F) #t stat very far from 0  
+#p value is <0.005 so very small --> significant  
+
+#yet in this case predict that in mature organisms, structures will be bigger so it makes sense to make it one tailed 
+t.test(leaf$LEAF.W.CM~leaf$LIFE.STAGE, var.equal=F, alternative ="less" )
+
+```
+Remember t test is only meant to compare two means. But it probably makes sense to not lump the parks together but a t test can't really do that
+
+you'd have to do 
+j at hawn vs j at francis
+j at hawn vs adults at hawn
+j aw hawn vs adults at francis
+
+then the same with adults. 
+This would be 6 t-tests. THIS IS BAD! would greatly increase error 
+```{r}
+boxplot(leaf$LEAF.W.CM~leaf$LIFE.STAGE*leaf$PARK)
+```
+
+
+
+ 
+#####Lab 04 03/15/2021
+Analysis of Variance (ANOVA) 
+
+ANOVA resides within Generalized Linear Models ('glm') 
+You can perform ANOVAs a bunch of different ways
+1) funtion lm
+2) function glm 
+3) funtion aov 
+
+(There is an actual function called anova but it generates a table, doesn't perform the calculation) 
+
+For an ANOVA you need a factor column that separates groups. If need to reassign something as a factor can do 
+df<-df%>%mutate(columnName = as.factor(columnName))
+```{r}
+data("iris")
+summary(iris)
+str(iris)
+```
+This is a bunch of us looking at the data. This is more for you than for "me". So don't include a bunch of this stuff in your homework. If it's easier, you can keep the code, just hash it out (# == comment out the line). 
+
+Want to visually inspect data to make sure it's not goofy, everything looks ok, give you a basic idea of what you think you'll see with the data analysis
+```{r}
+boxplot(iris$Petal.Width~iris$Species)
+
+#Using stripchart to look at each data point. Not something you'd really print in something formal but give you a nice way to look at it for you 
+stripchart(iris$Petal.Width~iris$Species)
+
+#but this looks funny so flip it with vertical function 
+stripchart(iris$Petal.Width~iris$Species, vertical = T)
+
+#but if want to spread out the closely associated points with jitter
+stripchart(iris$Petal.Width~iris$Species, vertical = T, method = "jitter", jitter = .2)
+
+tapply(iris$Petal.Width, iris$Species, mean) #means in quick table
+tapply(iris$Petal.Width, iris$Species, sd) #sds vary a lot 
+
+#use visual transformation to determine which works best 
+  #first start with log -- remember log is the natural log 
+stripchart(log(iris$Petal.Width)~iris$Species, vertical = T, method = "jitter", jitter = .2)
+#we can see that it inverted the relationship -- maybe this isn't the best. 
+#let's try log base 10
+
+stripchart(log10(iris$Petal.Width)~iris$Species, vertical = T, method = "jitter", jitter = .2)
+#also not the best -- because values for setosa are falling the negative area. the further down you go, the more it stretches it out. To counteract this, do log + 1
+
+
+stripchart(log10(iris$Petal.Width+1)~iris$Species, vertical = T, method = "jitter", jitter = .2)
+#this looks the best, the spread is more equal within species
+
+tapply(log10(iris$Petal.Width+1), iris$Species, mean) #different means
+tapply(log10(iris$Petal.Width+1), iris$Species, sd) #sd are now very close --> good! 
+
+#To confirm our quick visual inspections and the table, test homogeneity of variances
+
+bartlett.test(log10(iris$Petal.Width+1) ~iris$Species)
+#null is that vars are equal. p = .67 --> good! 
+
+#just to check, do without transformation  
+bartlett.test((iris$Petal.Width) ~iris$Species) #data do not have homo var! 
+
+#now we can do the actual analysis! 
+```
+```{r}
+lm(log10(iris$Petal.Width+1) ~iris$Species) #this doesn't make much sense! so pull the anova table out of the analysis
+
+anova(lm(log10(iris$Petal.Width+1) ~iris$Species))
+
+glm(log10(iris$Petal.Width+1) ~iris$Species) #can do the same thing with GLM 
+#this gives you null & residual deviance. Will talk about AIC at end of the semester 
+
+anova(glm(log10(iris$Petal.Width+1) ~iris$Species)) #other information
+
+aov(log10(iris$Petal.Width+1) ~iris$Species)
+
+```
+You want to put the aov into a dataframe -- MOST APPROPRIATE
+```{r}
+iris.aov<-aov(log10(iris$Petal.Width+1) ~iris$Species)
+#now should see iris.aov in the global environment 
+
+summary(iris.aov) #this is the anova table 
+#df, residuals are based on number of replications 
+#150-3 = 147 --> 50 observations per treatment - # of treatments
+#mean swuares is Sum of squares / df
+
+#if don't want/need to make a dataframe can do summary like this too
+summary(aov(log10(iris$Petal.Width+1) ~iris$Species))
+```
+Look at the stars to see how significant the values are. 
+But with an anova, you know there's difference, you don't know where the difference lies. So have to do a post hoc test 
+
+Tukey Kramer Highest Significant Difference (HSD)
+Only works on aov class 
+```{r}
+TukeyHSD(iris.aov) #in this case the differences are SOOOO big (p value is sooo small) that it cannot print the p values. In this case they are 2^-16 
+  # we write p <<<0.0001
+
+#These results make sense if we go back to the boxplot 
+boxplot(log10(iris$Petal.Width+1)~iris$Species)
+```
+Now use the medley data set 
+We have streams with insect diversity at those sites
+Do an ANOVA comparing diversity as a function of streams
+```{r}
+medley <- read.csv("~/Documents/biometry 2021/medley.csv")
+summary(medley)
+
+boxplot(medley$DIVERSITY~medley$STREAM)
+stripchart(medley$DIVERSITY~medley$STREAM, vertical = T, method = "jitter", jitter = .2)
+
+#check if log is better -- all this shows that non transfomed is better 
+tapply(medley$DIVERSITY, medley$STREAM,  mean) #different means
+tapply(medley$DIVERSITY, medley$STREAM,  sd) #sd is ok 
+
+tapply(log10(medley$DIVERSITY+1), medley$STREAM,  mean) #different means
+tapply(log10(medley$DIVERSITY+1), medley$STREAM,  sd) #sd is meh
+
+bartlett.test(medley$DIVERSITY~medley$STREAM) #.5
+
+bartlett.test(log10(medley$DIVERSITY+1)~medley$STREAM) #.39 
+```
+```{r}
+summary(aov(medley$DIVERSITY~medley$STREAM)) #not different 
+stream.aov<-aov(medley$DIVERSITY~medley$STREAM)
+TukeyHSD(aov(medley$DIVERSITY~medley$STREAM)) #confirms there's no difference
+```
+BUT! Want to look at residuals (i.e. errors) in order to determine if errors are rdistributed normally around their respective mean 
+```{r}
+plot(stream.aov) #--> spits out 4 graphs 
+```
+Residuals vs fitted: mean should always arise at 0. Values on Y are then standard deviations away from the mean. In this case none are too far away from teh mean. Doing ok 
+
+Normal QQ: perfectly normal would be along the line the whole time. A bit off but not terrible 
+
+Scale - Location: change as a function of the effect. This looks ok
+
+Residuals vs Leverage: Cooks distance never deviates from 0 so it's very normal 
+
+If you are super concerned about normality, can do Sharpiro test ON THE RESIDUALS
+```{r}
+shapiro.test(stream.aov$residuals) # p = 0.4803 --> normal 
+```
+Conclusion: stream diversity: not different between streams. 
+But given that there are no diffrences
+A: Reality is that there is no differences 
+B: you committed Type II error and FAILED to detect it 
+    - difference is small, hard to detect
+    -sample sizes were not large enough to detect it
+    - test is not powerful enough 
+    
+
+Tons of studies have shown that ANOVA is powerful. But power increases if sample sizes are larger. Perform power test to make sure this data set has enough power --> isnteal, pwr library 
+```{r}
+library(pwr) 
+summary(stream.aov)
+?pwr.anova.test #leave one out and gien other parameters will give you a value 
+# k = num groups, n = number of observations per group, f = effect size, 
+#going to be conservative and say n = 5 given that there's unequal sample size --> use the smallest amount, not the largest 
+pwr.anova.test(f=1.41,k=6,n=5,sig.level=0.05)
+
+#take sample size out so it gives back sample size 
+pwr.anova.test(f=1.41,k=6,sig.level=0.05, power = .99) #only need an n of 3.3 
+
+#all this shows that lack of difference is probably very real --> not due to small sample size 
+```
+
+
+#####Lab 05 03/22/2021
+
+Factorial ANOVA
+
+Two way factorial: 
+1) both are fixed --> Model I -->always use the function AOV 
+2) both are random --> Model II --> preferentially use lmer 
+3) mix --> Model III --> preferentially use lmer 
+
+function lmer is in package lme4 
+
+```{r}
+library(lme4)
+library(ISwR) #to get the coking pacakge 
+data("coking")
+coking #width is a factor, not numeric. Temp is also a factor. Time is numeric. 
+#Factor - it is a grouping, not an actual "number" 
+
+coking.aov<-aov(time ~ width *temp, data = coking)
+
+#Test assumptions
+  #If residentials are normal 
+shapiro.test(coking.aov$residuals) 
+  #Test for homo var --> not going to do today. in future will use levene test 
+
+#BUT: We can do a brief visual test 
+plot(coking.aov) #seems to be at least one potential outlier (pt #12)
+
+#Now can look at results 
+
+summary(coking.aov) 
+#3 widths so 2 dof 
+#2 temps so 1 dof
+#2*1 for width and temp which gives us interaction
+
+
+```
+Take residual SoS and divide by residuals
+3.33/.28 (i think i got this right --> see lecture notes) 
+
+123.14/dof (2) --> 61.57
+
+```{r}
+data("CO2")
+summary(CO2) #plant, type, treatment, concentration, uptake 
+
+str(CO2) #plant is ordinal, type is factor, treatment is factor, conc $ update are numeric
+
+#Uptake as a function of plant type and treamtent 
+uptakeCO2.aov<-aov(uptake ~ Plant * Treatment , data = CO2)
+plot(uptakeCO2.aov)
+
+shapiro.test(uptakeCO2.aov$residuals) #super not normal. 
+
+#What to do with non normal?
+# do nothing -- ANOVA is robust enough that should be able to give correct answer 
+# transform data 
+# run non parametric test --> last result 
+
+#Log Transform 
+uptakeCO2LOG.aov<-aov(log(uptake+1) ~ Plant * Treatment , data = CO2)
+plot(uptakeCO2LOG.aov) #not super good. Helped with variances, not with normality 
+
+#Concentration data is usually not normal. Do a search to find some transfomration ideas for concentraion data like pH, etc. In this case arcsine transfomation tends to work well for concentration data 
+```
+
+
+Perform a 2-way ANOVA on leaf data. Park & life stage are treatments. Leaf width is the response variable 
+```{r}
+leaf <- read.csv("~/Documents/biometry 2021/LeafData1.csv")
+
+leaf
+
+leaf.aov<-aov(log10(leaf$LEAF.W.CM+1) ~ leaf$PARK* leaf$LIFE.STAGE)
+summary(leaf.aov)
+plot(leaf.aov)
+boxplot(log10(leaf$LEAF.W.CM+1) ~leaf$PARK)
+boxplot(log10(leaf$LEAF.W.CM+1) ~leaf$LIFE.STAGE)
+boxplot(log10(leaf$LEAF.W.CM+1) ~leaf$PARK *leaf$LIFE.STAGE) #gap between juv groups but not as extreme difference between mature groups 
+
+
+#leaf stage is fixed 
+#park is a random effect (homologous to population) 
+#THEREFORE AOV IS NOT APPROPRIATE -- Park is not fixed. Must use lmer 
+```
+
+```{r}
+library(lme4)
+#Need to add the extra randomness associated with the park 
+# 1 "given" PARK --> | 
+leaf.mixAOV<-lmer(log10(leaf$LEAF.W.CM+1) ~ leaf$PARK* leaf$LIFE.STAGE + (1|leaf$PARK))
+
+#Have to use function ANOVA to get the ANOVA table 
+anova(leaf.mixAOV)
+
+
+#PREVIEW FOR NEXT WEEK
+#to get p values use funciton pf and do it manually
+#npar is the sample size 
+
+#pf(df numerator, df denominator, f value numerator) 
+#So to do park as a function of life stage 
+
+pf(1,1,3.3963)
+
+```
+Recap:
+AOV when all effects are FIXED
+if at least one is random then MUST do LMER
+
+3 way ANOVA
+
+CO2 data set: want to use concentration as a treatment instead of as a continuous variable 
+
+```{r}
+CO2.3way.aov<-aov(uptake ~ Type * Treatment * conc, data = CO2) #it ran! 
+summary(CO2.3way.aov) #have all the 1 ways and the interactions 
+#now there is a third factor of concentration and all the 2 ways with concentration and the three way interaction 
+```
+There's 1 dof for treatment and plant. 
+There are a ton of concentrations only gives 1 dof. it's treating concentration as a continuous variable. not assigning it a factor 
+
+When it's coded as a variable, you have to factorize the variable if you need it that way
+
+```{r}
+CO2$conc <- as.factor(CO2$conc)
+
+#can also do it using dplyr 
+CO2<-CO2%>%mutate(conc = as.factor(conc))
+
+str(CO2) #now it is a factor with 7 levels 
+
+#now rerun it 
+
+CO2.3way.aov<-aov(uptake ~ Type * Treatment * conc, data = CO2) #it ran! 
+summary(CO2.3way.aov) #now df is 6 --> 7-1 instead of 1 as before 
+
+
+```
+
+
+#####Lab 06 03/29/2021
+
+We have looked at 1way and 2way ANOVAs. They are complete randomized designs. All experimental units are assigned treatment at same level (e.g. individual). Sampling unit = experimental unit 
+Give rat drug, measure weight of entire rat. 
+
+Today, that methodologity will be violated. Look at Complete Randomized Block Design (CRBD)
+
++ (1|random treatment)
++ Error(block) 
+
+Beetle Example 
+```{r}
+block<-rep(c("Block1", "Block2", "Block3", "Block4"), c(3,3,3,3)) # 3 of each 
+genotype<-rep(c("BB", "Bb", "bb"), 4) #4 of each 
+weight<- c(0.958, 0.986, 0.925, 0.971, 1.051, 0.952, 0.927, 0.891, 0.829, 0.971, 1.010, 0.955)
+beetles<-data.frame(block, genotype, weight) #put all the vectors into a dataframe 
+summary(beetles)
+
+boxplot(beetles$weight ~beetles$genotype) #this looks like there's a difference in variance. 
+boxplot(beetles$weight ~beetles$block) #these vary 
+
+#Quick look at 2 way box plot: 
+boxplot(beetles$weight ~ beetles$block * beetles$genotype) #shows there's no replication of genotypes within blocks 
+
+#two way ANOVA won't work (well it will but it's wrong and won't give you info) 
+summary(aov(beetles$weight ~ beetles$block * beetles$genotype)) #it ran but couldn't give an F value. Don't have a replication to do so. 
+
+#Need to use the Error() function 
+
+beetle.block.aov<- aov(beetles$weight~ beetles$genotype + Error(beetles$block)) #treating block as an additive effect, not multiplicative one 
+summary(beetle.block.aov) #now get F and p values!
+```
+
+3 way ANOVA in a CRBD 
+
+Incomplete. get some replication whereas in the other ones each block has all options. 
+```{r}
+library(MASS)
+data(npk) #nitrogen, phosphorus, potassium
+
+#Dont have all possible combos in all blocks. 
+
+npk.aov<-aov(npk$yield~npk$N*npk$P*npk$K + Error(npk$block))
+
+summary(npk.aov) #no proper error term for initial P value up top. 
+#N and K are significant 
+
+#what happens if get rid of error? 
+
+summary(aov(npk$yield~npk$N*npk$P*npk$K)) #now only N is sig (but lost a lot of power), K is not #now added variance that is irrelevant to the question at hand so makes effects less clear 
+
+boxplot(npk$yield~npk$N*npk$P*npk$K) #be careful with something like this cuz all possible combos are not in every block. there's unequal variances. It's ok beause removing a lot of the noice with the error term. 
+```
+
+```{r}
+walter <- read.csv("~/Documents/biometry 2021/walter.csv")
+summary(walter) #block and treatment are considered numeric. need to change to factor 
+
+library(dplyr)
+walter<-walter%>%mutate(BLOCK = as.factor(BLOCK))%>%mutate(TREAT = as.factor(TREAT))
+#can also do using base R 
+#walter$BLOCK<-as.factor(walter$BLOCK) & do the same for treatment
+
+#it will still run if you don't convert BLOCK and TREAT to factors but the output will be wrong
+walter
+summary(aov(walter$MITE ~ walter$TREAT+ Error(walter$BLOCK)))
+
+```
+
+Nested design 
+For designs that incorporate Biological hierarchy or changes in biological scale, those changes in scale/hierarchy are treated as random effects 
+
+```{r}
+cage <- rep(c("Cage1","Cage2","Cage3"), c(8,8,8))
+individual <- factor(rep(rep(1:4, c(2,2,2,2)), 3))
+wing <- c(58.5, 59.5, 77.8, 80.9, 84.0, 83.6, 70.1, 68.3, 69.8, 69.8, 56.0, 54.5, 50.7, 49.3, 63.8, 65.8, 56.6, 57.5, 77.8, 79.2, 69.9, 69.2, 62.1, 64.5)
+mosquito <- data.frame(cage, individual, wing)
+
+boxplot(mosquito$wing ~ mosquito$cage)
+boxplot(mosquito$wing ~ mosquito$individual)
+
+#forward / to indicate individual within cage 
+mosquito.aov<-aov(mosquito$wing ~mosquito$cage/mosquito$individual)
+summary(mosquito.aov) #AOV treats all effects as fixed. When it calculates the F value for mosquito$cage it is doing Mean sq(mosquito) / mean sq (residual).
+#F value for mosquito$cage is incorrect. 
+
+#Correct value --> meansq(cage) / meansq(individual) 
+F.obs<-332.8 /191.2
+F.obs #1.74 
+p.correct<-pf(F.obs,2,9, lower.tail = F) #Fobs, df
+p.correct #0.2295843 --> NS 
+
+#P & F value is correct for mosquito$cage:mosquito$individual
+#F is a ratio of how much is due to the factor. Associated p value is the probability of observing the F value given the dof you have. 
+
+#If you back to original summary(mosquito.aov) cage looks sig but its not actually. There's not a cage effect, but htere is an individual effect 
+
+```
+
+```{r}
+nested <- read.csv("~/Documents/biometry 2021/nested.example.csv")
+
+nested<-nested%>%mutate(individual = as.factor(individual))%>%mutate(sample = as.factor(sample))
+
+nested
+
+summary(aov(nested$drug.concentration~ nested$treatment/nested$individual/nested$organ/nested$sample))
+#it failed to work because by including sample asking to see if sample has an effect because there is nothing below it. leave lowest level out of it 
+
+summary(aov(nested$drug.concentration~ nested$treatment/nested$individual/nested$organ))
+
+F.treat<-30.011/.215
+P.treat<-pf(F.treat, 2,9, lower.tail = F) #.1.681348e-07 --> very sig 
+F.ind<-0.215/0.225
+P.ind<-pf(F.ind, 9,24, lower.tail = F) #.49 --> NS 
+#organ is Correct P value. don't need to recalcualte 
+```
+
+Why is wood data from HW not good for parametric. Data is not normal dist and variances are not equal. Sample size was small, can't transform the data to get it to fit. When in doubt if shoudl do NP or Para, do both. 
+Some are pretty straightforward like log transform. But when you have to try a bunch of things, then you have to say it's enough and do NP. 
+
+
+#####Lab 07 04/05/2021
+
+Homeworks now on: 
+-don't have to test assumptions (unless it  explicitly says to do so)
+-Discuss results based on the framework of the class 
+-Graphs need to stand on its own: have axes labels, readable, etc 
+
+Repeated Measures ANOVA implemented in package nlme
+
+Examining within the same subject, day they are fed then 10 and 20 days after 
+```{r}
+library(nlme)
+
+library(dplyr)
+turtles <- read.csv("~/Documents/biometry 2021/turtles.rep.measures.csv")
+turtles
+turtles<-turtles%>%mutate(sex = as.factor(sex))%>%mutate(diet = as.factor(diet))
+summary(turtles) #now sex is a factor with 2 levels, diet is a factor with 3 levels 
+
+anova(lme(blood.plasma ~ sex * ordered(diet), random = ~1|subject, method = "ML", data = turtles)) 
+#unlike other things when you can do turtles$diet, for some reason with this function you need to do just the variable name and then do data = turtles at the end 
+```
+
+Getting the residuals witth funciton gls: going to have within subject correlation so have to specify that 
+```{r}
+turtles.gls<-gls(blood.plasma ~ sex, correlation = corSymm(form = ~1|subject), weight = varIdent(form = ~1|diet), data = turtles)
+
+
+plot(turtles.gls, resid(., type = "normalized") ~ fitted (.), abline = 0)
+#fitted values are average -- averages for two groups 
+#normalized to their relative means 
+
+```
+
+How to present repeated measures data -- use library lattice 
+Want to follow individuals across time 
+```{r}
+library(lattice)
+
+xyplot(blood.plasma~sex, data = turtles) #males vs females 
+xyplot(blood.plasma~diet, data = turtles) #diet 
+
+xyplot(blood.plasma~diet, group = subject, data = turtles) #same subject has the same color 
+
+xyplot(blood.plasma~diet, group = subject, type = "l", data = turtles) #changes to line
+
+xyplot(blood.plasma~diet, group = subject, type = "b", data = turtles) #point & line
+
+#lines don't cross much. ahve differnet starting points but not much interaction between sex and diet it appears 
+
+#Now seperate by sex
+xyplot(blood.plasma~diet|sex, group = subject, type = "b", data = turtles) #diet given sex
+#now can see that females have lower blood plasma to start. differences persist at each of the times
+
+```
+
+
+Fern Data
+```{r}
+fern <- read.csv("~/Documents/biometry 2021/Fern.water.pressure.csv")
+fern #water pressure recorded over time three times 
+
+fern<-fern%>%mutate(Genotype = as.factor(Genotype))%>%mutate(Category.Post.Treatment = as.factor(Category.Post.Treatment))
+#it will run if you don't change these but it won't plot. it's good scripting to do this, will save you headaches later 
+summary(fern$Category.Post.Treatment)
+
+levels(fern$Category.Post.Treatment)<-c("one", "two", "three", "four") #reorder level so it makes sense 
+
+anova(lme(Water.p ~ Genotype * ordered(Category.Post.Treatment), random = ~1|Individual, method = "ML", data = fern))  #treatment is 
+
+
+fern.gls<-gls(Water.p ~ Genotype, correlation = corSymm(form = ~1|Individual), weight = varIdent(form = ~1|Genotype), data = fern)
+
+
+plot(fern.gls, resid(., type = "normalized") ~ fitted (.), abline = 0)
+
+xyplot(Water.p ~ Category.Post.Treatment|Genotype, group = Individual, type = "b", data = fern)
+
+```
+
+#####Lab 08 04/12/2021
+
+Correlation and Regression 
+
+```{r}
+library(ISwR)
+data("thuesen")
+
+summary(thuesen) #notice there is a data point moving 
+
+?cor
+cor(thuesen$blood.glucose, thuesen$short.velocity) #NA because there there is missing data 
+cor(thuesen$blood.glucose, thuesen$short.velocity, use = "complete.obs") #this gets rows with missing data, only ones that have all data 
+#output gives you the correlation. 
+
+cor.test(thuesen$blood.glucose, thuesen$short.velocity, use = "complete.obs") #parametric. This test actually gives you more data, including the cor value but p values and stuff. Use this one, not just cor 
+
+
+#Confidence intervals
+  #Null is that Pearson's = 0. If interval contains 0 then FTR null. IF 0 not contained in 95CI, then reject null
+
+
+#NP alternative --> change default method from pearson to kendall / spearman 
+cor.test(thuesen$blood.glucose, thuesen$short.velocity, use = "complete.obs", method = "kendall")
+#H0 --> tau = 0 
+
+#In this case not sig, bc less power associated with NP 
+
+cor.test(thuesen$blood.glucose, thuesen$short.velocity, use = "complete.obs", method = "spearman")
+#H0 --> rho = 0 
+#In this case not sig, bc less power associated with NP
+
+#kendell is a bit more powerful tthan spearman 
+
+```
+Visual correlation -- useful for large multivariate datasets 
+
+```{r}
+data("iris")
+
+iris
+
+pairs(iris) #plots everything. see quickly where there's clusters and such and what appears to have  correlation and what doesn't
+
+cor(iris) # species is factor so not numeric 
+
+cor(iris[,1:4]) # empty first to do all rows, and leave hte fifth column out. So look at morphmetrics independent of species. Gives correlation matrix 
+
+#See that petal width and petal length are entirely correlated. Therefore just want to use one of them so that you do not overfit the model. Creates redundancy in data if include both 
+
+
+```
+
+Simple linear regression: funciton lm
+
+```{r}
+plot(thuesen$blood.glucose, thuesen$short.velocity) #not super clear if there's a correlation 
+
+thuesen.lm<-lm(thuesen$short.velocity~thuesen$blood.glucose)
+summary(thuesen.lm) #get p values, residuals, r squared, etc
+#R squared: only 17% of the variation in the model is explained by the regression line
+
+#a reminder on rmd that when doing abline and want to look at it, you need to highlight and run both lines togehter or it doesn't know where to add the abline to. 
+plot(thuesen$blood.glucose, thuesen$short.velocity, xlim = c(0,20), ylim = c(0,2)) #fix limits to highlight it better 
+abline(thuesen.lm, col = "blue")
+abline(1.325652,0, col = "red") #this is the the mean of short velocity, would be your null 
+#given how close the two lines are, show that the correlation is only a slight improvement from the null
+
+
+#look at diagnostics --> how well is line fitting? 
+#Regression diagnostics --> use library car
+library(car) #companion to applied aggression package 
+
+scatterplot(thuesen$blood.glucose ~thuesen$short.velocity) #looks at normality and variation 
+
+#straight blue line is the linear regression
+
+
+#can also use the base states library 
+
+
+#par and opar make a formatting open and close 
+reg.opar<-par(mfrow=c(2,2), mex=0.6, mar = c(4,4,3,2)+0.3) #mfrow makes a 2X2 matrix, mex adjusts space between graphs and then mar adjusts the margins 
+plot(thuesen.lm, which = 1:4)
+par(reg.opar)
+
+#doesn't really print on RMD but when you knit it will make them a square 
+
+```
+Plot data with regression intervals 
+Must get rid of NA's 
+```{r}
+options(na.action = na.exclude) #this removes missing data 
+attach(thuesen)
+thuesen.lm<-lm(short.velocity~blood.glucose) #rerun but this will remove missing data --> usually want to do this earlier 
+
+summary(thuesen.lm) #it all looks the same, but some things play better with missing values than othres 
+
+pred.frame<-data.frame(blood.glucose=4:24) #just creating a frame for the graph 
+predicted.values<-predict(thuesen.lm, int = "p", newdata = pred.frame)
+predicted.values
+pred.frame
+#predict grabs the regression line and then predicts it based on it 
+pred.conf.inter<-predict(thuesen.lm, int = "c", newdata = pred.frame)
+
+#plot-- mine looks weird and i can't figure it out 
+pred.glucose<-pred.frame$blood.glucose
+pred.glucose
+#matlines == matrix lines 
+#lty is line type. 1 solid, 2 dashed,3 dotted, s etc 
+plot(thuesen$blood.glucose, thuesen$short.velocity,ylim=range(thuesen.lm$short.velocity, predicted.values), na.rm=TRUE) #y axis is based on actual data and the predicted values
+matlines(pred.frame$blood.glucose, predicted.values, lty=c(1,2,2), col = "red")
+matlines(pred.glucose, pred.conf.inter, lty=c(1,4,4), col = "blue")
+
+```
+
+
+Practice on own: 
+```{r}
+data("UN")
+summary(UN) #plot infantMortality against ppgdp
+
+#log 10 transform + 1, then do lm, and run 
+```
+
+Polynomial regression
+
+Height Vs Age Dataset
+```{r}
+hva <- read.csv("~/Documents/biometry 2021/HeightVsAge.csv")
+
+attach(hva)
+
+plot(Height ~Age)
+plot(log10(Height) ~Age) #didn't fix super well 
+
+#instead want tot do a polynomial linear regression bc log transfrom didn't work well
+summary(lm(Height ~Age)) #very sig, models explains almost 90
+
+plot(Height ~Age)
+abline(lm(Height ~Age)) #data is not even on both sides of the line, shows that maybe linear regression isn't hte best but instead needs to do polynomial regression 
+
+#indicates that you want to abandon linear and move to polynomial. 
+
+age.poly.lm<-lm(Height~poly(Age, 2)) #can linear or quadratic to see which one is better
+anova(age.poly.lm) #very highly sig
+summary(age.poly.lm) #model now explains 99% of variation --> went up by 10% 
+
+
+Age.H.predicted<-predict(age.poly.lm, data.frame(x=Age), interval = 'confidence', level = 0.99)
+plot(Height ~Age)
+lines(Age, Age.H.predicted[,1], col = "blue", lw = 3)
+lines(Age, Age.H.predicted[,2], col = "green", lty = 3)
+lines(Age, Age.H.predicted[,3], col = "green", lty = 3)
+
+#now data and on either side of line evenly, not like before when we used a linear model. Poly fits better 
+
+```
+
+
+Try on own with Dissolved NO 
+
+A reminder that straight lines don't have inflection points. 
+2nd order is one inflection point 
+3rd order would be two infelctions points 
+
+Order of model is always # inflection points + 1
+
+```{r}
+dno <- read.csv("~/Documents/biometry 2021/dissolved.Nitogen.csv")
+attach(dno)
+
+dno #i arbitrarily chose x and y. IDK if there's one that's supposed to be the response variable 
+
+plot(pressure.tms, dissolved.NO)
+
+
+dno.poly.lm<-lm(pressure.tms~poly(dissolved.NO, 2)) #can linear or quadratic to see which one is better
+anova(dno.poly.lm) #very highly sig
+summary(dno.poly.lm) 
+
+dno.predicted<-predict(dno.poly.lm, data.frame(x=dissolved.NO), interval = 'confidence', level = 0.99)
+plot(pressure.tms ~dissolved.NO)
+lines(dissolved.NO, dno.predicted[,1], col = "blue", lw = 3)
+lines(dissolved.NO, dno.predicted[,2], col = "green", lty = 3)
+lines(dissolved.NO, dno.predicted[,3], col = "green", lty = 3)
+
+#poly better than linear model 
+plot(pressure.tms ~dissolved.NO)
+abline(lm(pressure.tms ~dissolved.NO))
+
+#adding regression lines of different methods is really easy in ggplot. 
+
+```
+
+
+
+
+#####Lab 09 04/19/2021
+
+Linear Model Inverse Predictions
+
+
+Simple Linear Regression
+```{r}
+titration <- read.csv("~/Documents/biometry 2021/titration.csv")
+summary(titration)
+
+plot(titration$absortion~titration$concentrtion.log)
+
+tit.lm<-lm(absortion~concentrtion.log, data = titration) #can't do titration$abs or it causes problems with predict later on
+anova(tit.lm)
+summary(tit.lm) #intercept not sig, but the conc is verg sig. Slope is 4.388. R2 and adjusted are very similar which means there's nothing goofy in the model -- model explains a high level of the data 
+
+
+#what happens if run an unknown sample? can you get the abs value back? 
+#need to generate a dataframe that contains the unknown concentration value
+
+#remember that the unk values need to be in the same way as the known values. in this case needs to be log transfomred to match the other data 
+sample1<-data.frame(concentrtion.log = 1.67)
+class(sample1) #worked!
+
+#Use the fucntion predict to ask what is the abs. 
+predict(tit.lm, newdata=sample1, interval = "prediction") #gives you  the Y value range paired with the X valye 
+
+
+```
+**If want to do an inverse prediction, you must inverse the function**
+we know that conc drives abs, but if had abs and wanted to get back conc hve to flip everything
+
+Scientifically this doens't make sense, but mathematically it does 
+```{r}
+plot(concentrtion.log~absortion, data =titration)
+
+tit.lm.inverse<-lm(concentrtion.log~absortion, data = titration)
+
+#known if have unk conc but have abs, we can figure it out 
+
+sample2<-data.frame(absortion = 13.6)
+class(sample2) #worked!
+
+#Use the fucntion predict to ask what is the abs. 
+predict(tit.lm.inverse, newdata=sample2, interval = "prediction") #now have a abs and given the range output of conc
+
+#all this works with polynomial regression, etc 
+```
+
+Regression with replication: Linearity over groups
+Set experiment with 5 different tanks, all at 5 different temps. 
+Measure the growth rate of the fish in the tanks
+At each temp observation, have multiple replicates (fish) 
+Should you do an ANOVA or do a linear regression?
+
+```{r}
+library(ISwR)
+
+data("fake.trypsin")
+fake.trypsin
+summary(fake.trypsin) #trypsin value (response), grp = int , grpf is same as grp but as a factor
+
+attach(fake.trypsin)
+
+#First run as an ANOVA
+ft.aov<-aov(trypsin~grpf) #use the factorized version of group
+anova(ft.aov) #df 5 beacuse considering a factor
+summary(ft.aov)
+
+#Run as an regression 
+ft.lm<-aov(trypsin~grp) #use the int version of group
+anova(ft.lm) #only 1 DF because considering a cont varaible 
+summary(ft.lm)
+
+#remember that LM is a special type of anova 
+#in the AOV it's allowing each group to have its own mean 
+#in regression it says mean of group needs to fall on regression line 
+
+
+#look at means 
+mean.try.groups<-tapply(trypsin, grpf, mean)
+stripchart(trypsin ~ grp, method = "jitter", jitter = 0.1, vertical = T, pch = 16, cex = 0.8)
+#superimpose the means of each group onto the stripchart (show and tell, don't really need to know it)
+lines(1:6, mean.try.groups, type = "b", pch = 4, cex = 2, lty=2, col="red")
+abline(ft.lm, col = "blue") #shows that it fits means pretty well but not for 6th group. 
+
+#what does this mean?
+#ANOVA calculating mean for each group. DF = 6-1 = 5. But you only calculate 1 slope with the regression. which one is better? --> hint: (great type of problem for the exam) --> Occam's Razor. What does it say, how does it apply in this situation? 
+
+detach(fake.trypsin)
+```
+
+
+Logistic regression --> response variable is binomial 
+E.g. sex (in some systems lol plants and fish) , presence/absence, coin flips, etc
+
+Polis dataset: islands off the coast of CA. measured the perimeter and the area of the island. Ratio is perirmeter/area. If ratio is large, can get away from the coast. if ratio is small, there's a lot of coastline for the island. 
+PA is presence/absence for the single species of crab --> Uta 
+
+```{r}
+polis <- read.csv("~/Documents/biometry 2021/polis.csv")
+summary(polis)
+
+#do logistic regressions (AKA logit regreesions) are performed under the 'glm' function with the 'family' link of binomial 
+
+polis.logit<-glm(PA ~ RATIO, data = polis, family = binomial) #have to specify family because is default is that error terms are dist in a normal fashion. but PA is a binomial, not normal 
+anova(polis.logit) #can't give error terms cuz data are not normal. Gives deviations of Residuals and Deviance. Therefore don't need to run anova and look straight at the summary. 
+
+summary(polis.logit) #this looks more like what we are used to seeing. Both intercept and ratio (slope) are sig. 
+
+#say wanted to compare the model to the null, can do that (just saying can do, code not shown)
+
+#let's look at graph of lm 
+
+xs<-seq(0,70, l=1000) #created this sequence. Did 0-70 based on the range of the data --> Ratio smallest is 0.21, largest is 63. So extend the model a bit and did 0-70. Then do 1000 to make 1000 points that go from 0 to 70. Makes a series of 1000 points that range from 0-70 and have 
+#this creates a placeholder of x values that then get a y value from the polis.predict model to make the line 
+
+polis.predict<-predict(polis.logit, type= "response", se = T, newdata = data.frame(RATIO=xs))
+plot(PA ~ RATIO, data = polis, xlab =" ", ylab = " ", axes= F, pch = 16, cex =0.7) #only plotted data
+
+#add lines for mean mode effect
+plot(PA ~ RATIO, data = polis, xlab =" ", ylab = " ", axes= F, pch = 16, cex =0.7)
+points(polis.predict$fit ~ xs, type = "l", col = "red") #makes the line smooth
+#add confidence intervals 
+lines(polis.predict$fit + polis.predict$se.fit ~xs, type ="l", lty = 2, col = "red")
+lines(polis.predict$fit - polis.predict$se.fit ~xs, type ="l", lty = 2, col = "red")
+
+#add the rest back in
+mtext(expression(paste(italic(Uta ), " Precense/Absense")), 2, line = 3)
+axis(2, las = 1)
+mtext("Perimeter to Area Ratio", 1, line = 3)
+axis(1, las = 1)
+box(bty = "l")
+
+##ggplot will do it way faster. 
+#will show when the ratio changes, more likely to find crab or not. When ratio really small, crab is found, when ratio high likely not to have it. gives you confidence intervals for the center ratio amounts 
+
+```
+
+
+
+
+
+#####Lab 10 04/26/2021
+
+ANCOVA
+These notes are decidingly not the best. heads up. 
+```{r}
+library(ISwR)
+data("hellung")
+hellung #glucose, concentration, diameter. Glucose is being read as a number, not a factor 
+?hellung #gives info about the data set. 
+
+#need to make sure glucose is read as a factor
+library(dplyr)
+
+hellung<-hellung%>%mutate(glucose = as.factor(glucose))
+
+#also can do hellung$glucose<-factor(hellung$glucose)
+hellung #now glucose is a factor 
+
+#attach data so can manipulate easily 
+
+attach(hellung)
+
+plot(conc, diameter, pch=as.numeric(glucose)) #data doesn't look terrible linear. 
+
+#many times when you do a legend,you can assign a location. can also select location based on pointer. #**however,this won't work in RMD. You have to do it in a normal r script**
+legend(locator(n=1), legend = c("glucose", "no glucose"), pch = 1:2)
+
+#Log scale the axes without changing the data. Now looks much more linear 
+plot(conc, diameter, pch=as.numeric(glucose), log ="xy") 
+
+
+```
+
+
+```{r}
+library(car)
+scatterplot(diameter~conc|glucose, hellung)
+#even tho the linear model seems to be fitting, it's not great because at beginning, residuals are on one side, further on it's on the other side. Residuals are not randomly dist across linear model line. 
+#Violates assumption of random dist of residuals 
+
+#Transform the data within scatterplot function 
+scatterplot(log(diameter)~log(conc)|glucose, hellung)
+#now errors are randomly dist of line. 
+#now can do the ancova
+```
+
+```{r}
+#first split the dataframe 
+#but there was a problem with the attached data frame so need to detach and then work with it. when it's attached, it freezes that in place and it's hard to work with 
+
+detach(hellung)
+hellung
+#i missed a line of code here... code doesn't work. something about renaming the glucose factor yes and no
+#should be able to get structure of code, but not the data wrangling 
+
+tet.gluc<-hellung[glucose =="Yes",]
+tet.nogluc<-hellung[glucose =="No",]
+attach(hellung)
+
+
+lm.nogluc<-lm(log10(diameter)~log10(conc), data = tet.nogluc)
+summary(lm.nogluc)            
+lm.gluc<-lm(log10(diameter)~log10(conc), data = tet.gluc)
+summary( lm.gluc)
+
+plot(conc, diameter, pch = as.numeric(glucose), log ="xy")
+abline(lm.nogluc)
+abline(lm.gluc)
+
+anova(lm(log10(diameter) ~log10(conc)*glucose))
+#No interaction, thus slopes are equal 
+
+#must test to determine if intercepts are equal 
+#but must use a Type II Sum of Squares 
+#need to get R to ignore interaction --> use package car
+
+
+anova(lm(log10(diameter) ~log10(conc)*glucose), type ="II")
+#to get around the atomic vector thing, change anova to Anova, and make it + not *
+Anova(lm(log10(diameter) ~log10(conc)+glucose), type ="II")
+
+#it's easier to have R assume interaction because that's usually what happens. If there was an interaction, you would have stopped. then would have done separate regression lines already run. Now rejected the interactions so Type II anova shows that a) regression is sig and b) glucose is sig. There is a common slope but there are separate intercepts 
+
+summary(lm(log10(diameter)~log10(conc)+glucose)) #intercept very sig 
+
+#Appropriate graph with common slope 
+#I dont know what's happening with mine... something is off 
+plot(conc, diameter, pch = as.numeric(glucose), log ="xy")
+abline(1.642132, -0.055393) # line for the glucose treatment 
+abline(1.642132--0.028238, -0.055393) #intercept - the glucose --> no glucose 
+
+```
+Crickets: 2 species of crickets. are they changing their rate as a function of temp? and if so, are the different species doing it at the same or a different rate?
+```{r}
+crickets <- read.csv("~/Documents/biometry 2021/crickets.csv")
+crickets$Species<-factor(crickets$Species)
+
+plot(crickets$Temp, crickets$Pulse, 
+     col = crickets$Species, 
+     pch = 16)
+
+#assumption testing
+scatterplot(Pulse~Temp|Species, crickets) #just checking assumption of linearity 
+#plot(fitted (model), residuals (model)
+
+
+#the default in R is to include interaction
+anova(lm(Pulse~Temp * Species, data = crickets))
+#interaction is .2542, which is not sig. therefore need to remove it 
+
+summary(lm(Pulse~Temp * Species, data = crickets)) #interaction is not sig but can't consider the interaction nor the covariates as valid because interaction is smooshed in there. 
+
+#need to move on to a type II Anova b/c there's no interaction
+#Type II forces R to ignore interaction. Treats species and temp as completely indenepent events 
+
+Anova(lm(Pulse~Temp + Species, data = crickets, Type = "II")) #everything that was put into temp was removed. Temp SS went from 7894 to 4376. If don't do it approparitely, can reach "false" conclusions
+
+summary(lm(Pulse~Temp + Species, data = crickets, Type = "II"))
+
+plot(crickets$Temp, crickets$Pulse, 
+     col = crickets$Species, 
+     pch = 16)
+abline(7.21091, 3.60275) #i don't know why these are off the data...
+abline(7.21091-10.06529,3.60275) 
+
+
+
+```
+
+
+#####Lab 11 05/03/2021
+
+Contingency tests 
+
+R X C (row by columns)
+Ho: the frequency in the rows in independent of the frequency in the columns
+
+```{r}
+R1 = c(4788,30)
+R2 = c (8916,76)
+
+vax.react.mat = matrix(c(R1, R2), nrow = 2, byrow = T)
+
+vax.react.mat #came out how we expected 
+
+#add column and row names 
+rownames(vax.react.mat) = c("Thigh","Arm")
+colnames(vax.react.mat) = c("Not.severe", "severe")
+
+vax.react.mat #names added 
+addmargins(vax.react.mat) #adds the sum of the R and C 
+```
+Is reaction independent of site of vaccination?
+```{r}
+chisq.test(vax.react.mat) #p = .18
+?chisq.test #says that the default is a continuity correction. Done for when sample sizes are small. All our cells have at least 5 observation. Bc our sample sizes are large, we can remove the correction
+
+chisq.test(vax.react.mat, correct = FALSE) #p = .15 
+#pvalue dropped without the correction. Still not sig but it makes a difference. 
+
+
+#Say our data was this, it could be the 
+
+R1.b = c(4788,30)
+R2.b = c (8916,35)
+
+vax.react.mat.b = matrix(c(R1.b, R2.b), nrow = 2, byrow = T)
+chisq.test(vax.react.mat.b) #nott sig 
+chisq.test(vax.react.mat.b, correct = FALSE) #sig
+
+#notice you lose 2 df, not just 1
+```
+
+How to derive tables from "raw" data
+```{r}
+survey<- read.csv("~/Documents/biometry 2021/Survey.sustainability.csv")
+survey 
+#status: udnergrad vs other groups 
+#belong: did you ever belong to a sustainibility group
+#concern: how concerned are you with climate change impacting your daily life 
+
+
+summary(survey) #all ints, in other times may want to convert things to factors 
+```
+
+Question 1: is belonging to an env org independent of status?
+First need convert the data from raw counts to tabular form 
+
+```{r}
+status.table<-table(survey$STATUS)
+status.table
+rownames(status.table)<-c("undergrad", "grad", "faculty", "staff")
+
+prop.table(status.table) #gets the proportions 
+
+barplot(prop.table(status.table)*100, ylab ="percent", ylim = c(0,70)) #gets percentages instead of props 
+```
+I recommend you look into using dplyr for this and the pivot_wider and pivot_longer functions https://tidyr.tidyverse.org/reference/pivot_wider.html
+
+```{r}
+belong.table<-table(survey$STATUS, survey$BELONG)
+belong.table #no cells with less than 5 observations 
+colnames(belong.table)<-c("yes", "no")
+rownames(belong.table)<-c("undergrad", "grad", "faculty", "staff")
+addmargins(belong.table)
+
+#is the prop of observation in the yes of column similar among belong types??
+summary(belong.table) #when you run a summary on a table, it automatically gives you the chi square values. 
+
+#without correction
+chisq.test(belong.table, correct = F) #still sig 
+```
+Given that the chi square was sig, whihc group(s) is most hetergeneous? 
+Use fisher's exact test (there's other tests you can use too)
+
+```{r}
+fisher.test(belong.table) #two sided 
+
+library(rcompanion) #equiv of pairwise test contained within this package 
+
+#need this to see where the differences lie within the sample 
+belong.fisher<-pairwiseNominalIndependence(belong.table, fisher = TRUE, 
+                                           gtest = FALSE, 
+                                           chisq = FALSE, 
+                                           digits = 3)
+                                           
+
+belong.fisher #gives all the comparisons, looking at just the adjusted 
+#differences:
+  #ug:faculty only one significant 
+
+
+
+#want to do the adjusted because it's not derived from a theorhetical dist where we have a null, like sex dist. if know the udnerlying dist then can used the "normal one"
+```
+Mosaic plots 
+```{r}
+mosaicplot(belong.table, col = c("blue", "dark blue"),
+           cex.axis = 1, 
+           sub = "status", 
+           ylab = "obs freq",
+           main = "do you belong to an env org?")
+
+#can look at where the breaks fall. do they have differnet proportions? can see that the breaks are super far apart in ug vs faculty -->? sig. this shows the difference in counts but the proportion within 
+```
+Is concern independent of campus status? 
+-make table 
+-add row and col names 
+-add margins
+-run test 
+```{r}
+concern.table<-table(survey$STATUS, survey$CONCERN)
+concern.table #no cells with less than 5 observations 
+rownames(concern.table)<-c("undergrad", "grad", "faculty", "staff")
+addmargins(concern.table)
+
+summary(concern.table)
+
+concern.fisher<-pairwiseNominalIndependence(concern.table, fisher = TRUE, 
+                                           gtest = FALSE, 
+                                           chisq = FALSE, 
+                                           digits = 3)
+
+concern.fisher 
+#differences: 
+  #ug: grad
+  #ug: fac
+
+
+mosaicplot(concern.table, col = c("blue", "dark blue", "light blue"),
+           cex.axis = 1, 
+           sub = "status", 
+           ylab = "obs freq",
+           main = "how concerned are you about climate change?")
+```
+Q3: is concern independent of status and belonging? 3D contingency 
+RxCxL 
+
+Cochran-mantel-haenszel test for repeated tests of indenpendence
+
+```{r}
+cxsxbtable<-table(survey$STATUS, survey$BELONG, survey$CONCERN)
+rownames(cxsxbtable)<-c("undergrad", "grad", "faculty", "staff")
+colnames(cxsxbtable)<-c("no", "yes") #not good when 3D
+addmargins(cxsxbtable)
+
+ftable(cxsxbtable)
+mantelhaen.test(cxsxbtable) #m statistic 
+#sig so then do fishers to look at individual comparisions
+
+#fishers for #3d tables 
+n= dim(cxsxbtable)[3]
+
+# Create a loop so it is faster
+for(i in 1:n){
+  Name = dimnames(cxsxbtable)[3]$CONCERN[i]
+  P.value = fisher.test(cxsxbtable[,,i])$p.value
+  cat(Name, "\n")
+  cat("Fisher test p-value: ", P.value, "\n")
+  cat("\n")
+}
+#three three lines are the three concern status 
+#then have to go into each 2 way comparisons that are sig (first and second) to look at where differences lie with the status * belong  
+#would have to subset by concern = 1 and then run status*belong
+#then subset concern = 2 and then run status*belong, etc 
+
+
+
+#once you have more than 3 dimensions, it gets harder and harder to interpret 
+```
+
+
+
+
+
+#####Lab 12 05/10/2021
+
+Exam is due 5/17 after 11PM 
+No feedback 
+Make sure your graphs look good! Rename axes, make regression lines match data, etc. E.g. if multiple regression lines, color of data should match color of line
+Don't need to test assumptions 
+You can email me with questions but I a) may not know the answer b) may not be able to give you the answer because it will give it away 
+
+1) Statistical hypothesis, not biological hypothesis 
+2) 
+3)
+4)
+
+Principle Component Analysis (PCA)
+Technically not statistiscal, it's an information reduction methodology
+Show and tell just so you know about it 
+
+```{r}
+?prcomp #function in base R for PCA
+?princomp
+
+data("mtcars") #built into r 
+
+mtcars
+
+prcomp(mtcars) #standard deviation is the amount of variation that is accounted for in each axes
+#axis 1 = 136 --> but htis is meaningless if you don't know the total 
+
+summary(prcomp(mtcars)) #now gives the proportion of variances. now know 136 = 92% of variance
+
+#for PCA no hard rule about how many axis you should accept or reject. If an axis accounts for less than 5% of variation, can leave it out. 
+
+biplot(prcomp(mtcars), xlim = c(-.5,0.5)) #the center red part is the centroid of the data 
+#seeing that displacement and horsepower are driving the spread of the data 
+
+biplot(prcomp(mtcars, scale.=T), xlim = c(-.5,0.5)) #shows all the different lines 
+
+biplot(princomp(mtcars)) #flips it 
+
+```
+
+```{r}
+data("iris")
+
+iris
+
+biplot(prcomp(iris[ ,1:4], scale. = T)) #see that on x see that it's 3 varaibles
+#whereas across second axis (y) see that is sepal.width is spreading out data
+#probably some redundandcy with including petal l, w and sepal length because they are aligned. 
+#really good for identifying redundant variables 
+
+biplot(prcomp(iris[ ,1:3], scale. = T)) #leaves petal width out 
+summary(prcomp(iris[ ,1:3])) 
+```
+
